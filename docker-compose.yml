@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # ========================
+  # Vitalium Backend - Prod
+  # ========================
+  vitalium-backend:
+    build:
+      context: ./vitalium-backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: vitalium-backend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vitalium:${POSTGRES_PASSWORD}@postgres:5432/vitalium?schema=public
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=info
+      - PORT=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./vitalium-backend/logs:/app/logs
+      - ./vitalium-backend/uploads:/app/uploads
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ['CMD', 'node', 'healthcheck.js']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================
+  # Vitalium Frontend - Prod
+  # ========================
+  vitalium-frontend:
+    build:
+      context: ./vitalium-frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3000}
+    container_name: vitalium-frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    networks:
+      - vitalium-network
+    depends_on:
+      - vitalium-backend
+
+  # ========================
+  # PostgreSQL Database
+  # ========================
+  postgres:
+    image: postgres:15-alpine
+    container_name: vitalium-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-vitalium}
+      - POSTGRES_USER=${POSTGRES_USER:-vitalium}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-vitalium} -d ${POSTGRES_DB:-vitalium}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================
+  # Redis Cache
+  # ========================
+  redis:
+    image: redis:7-alpine
+    container_name: vitalium-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  vitalium-network:
+    driver: bridge

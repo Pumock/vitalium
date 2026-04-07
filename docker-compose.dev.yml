@@ -1,0 +1,126 @@
+services:
+  # ========================
+  # Vitalium Backend - Dev
+  # ========================
+  vitalium-backend:
+    build:
+      context: ./vitalium-backend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: vitalium-backend-dev
+    ports:
+      - '3000:3000'
+      - '9229:9229'
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://vitalium:vitalium123@postgres:5432/vitalium?schema=public
+      - JWT_SECRET=your-super-secret-jwt-key-for-vitalium-backend-dev
+      - LOG_LEVEL=debug
+      - PORT=3000
+      - ENABLE_METRICS=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./vitalium-backend/src:/app/src:cached
+      - ./vitalium-backend/prisma:/app/prisma:cached
+      - ./vitalium-backend/test:/app/test:cached
+      - ./vitalium-backend/logs:/app/logs
+      - ./vitalium-backend/uploads:/app/uploads
+      - ./vitalium-backend/package.json:/app/package.json:ro
+      - ./vitalium-backend/tsconfig.json:/app/tsconfig.json:ro
+      - ./vitalium-backend/nest-cli.json:/app/nest-cli.json:ro
+      - backend_node_modules:/app/node_modules
+    networks:
+      - vitalium-network
+    tty: true
+    stdin_open: true
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
+
+  # ========================
+  # Vitalium Frontend - Dev
+  # ========================
+  vitalium-frontend:
+    build:
+      context: ./vitalium-frontend
+      dockerfile: Dockerfile.dev
+    container_name: vitalium-frontend-dev
+    ports:
+      - '3001:3001'
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      - ./vitalium-frontend/app:/app/app:cached
+      - ./vitalium-frontend/components:/app/components:cached
+      - ./vitalium-frontend/hooks:/app/hooks:cached
+      - ./vitalium-frontend/lib:/app/lib:cached
+      - ./vitalium-frontend/services:/app/services:cached
+      - ./vitalium-frontend/styles:/app/styles:cached
+      - ./vitalium-frontend/public:/app/public:cached
+      - ./vitalium-frontend/next.config.mjs:/app/next.config.mjs:ro
+      - ./vitalium-frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./vitalium-frontend/postcss.config.mjs:/app/postcss.config.mjs:ro
+      - ./vitalium-frontend/components.json:/app/components.json:ro
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - vitalium-network
+    depends_on:
+      - vitalium-backend
+
+  # ========================
+  # PostgreSQL Database
+  # ========================
+  postgres:
+    image: postgres:15-alpine
+    container_name: vitalium-postgres-dev
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=vitalium
+      - POSTGRES_USER=vitalium
+      - POSTGRES_PASSWORD=vitalium123
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vitalium -d vitalium']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================
+  # Prisma Studio
+  # ========================
+  prisma-studio:
+    build:
+      context: ./vitalium-backend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: vitalium-prisma-studio
+    ports:
+      - '5555:5555'
+    environment:
+      - DATABASE_URL=postgresql://vitalium:vitalium123@postgres:5432/vitalium?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./vitalium-backend/prisma:/app/prisma
+    networks:
+      - vitalium-network
+    command: npx prisma studio --port 5555 --browser none
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  backend_node_modules:
+    driver: local
+  frontend_node_modules:
+    driver: local
+
+networks:
+  vitalium-network:
+    driver: bridge
