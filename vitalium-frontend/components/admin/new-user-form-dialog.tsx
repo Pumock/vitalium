@@ -49,10 +49,11 @@ const initialFormData: FormData = {
 
 interface NewUserFormProps {
   onClose: () => void;
+  onUserCreated?: () => void | Promise<void>;
 }
 
 
-export function NewUserForm({ onClose }: NewUserFormProps) {
+export function NewUserForm({ onClose, onUserCreated }: NewUserFormProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -91,16 +92,18 @@ export function NewUserForm({ onClose }: NewUserFormProps) {
       if (isDoctor) {
         const doctorPayload: CreateDoctorPayload = {
           userId: createdUser.id,
-          specialty: formData.specialty,
           crm: formData.crm,
-          consultationPrice: formData.consultationPrice,
-          bio: formData.bio,
+          crmState: true,
+          isActive: true,
         };
 
         await CreateDoctorService.createDoctor(doctorPayload);
         alert(`Médico ${createdUser.firstName} criado com sucesso!`);
       } else {
         alert(`Usuário ${createdUser.firstName} (${createdUser.role}) criado com sucesso!`);
+      }
+      if (onUserCreated) {
+        await onUserCreated();
       }
       setFormData(initialFormData);
       onClose();

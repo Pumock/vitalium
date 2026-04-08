@@ -9,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { UnitModule } from './units.module';
 import { DoctorUnitModule } from './doctor-unit.module';
 import { LoggingInterceptor } from '../shared/interceptors/logging.interceptor';
+import { AdminModule } from './admin.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { LoggingInterceptor } from '../shared/interceptors/logging.interceptor';
     DoctorModule,
     DoctorUnitModule,
     UnitModule,
+    AdminModule,
     ExceptionsModule,
     MonitoringModule,
   ],
