@@ -1,4 +1,5 @@
 "use client"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,58 +21,54 @@ import { SystemMonitoring } from "@/components/admin/system-monitoring"
 import { CompliancePanel } from "@/components/admin/compliance-panel"
 import { SystemSettings } from "@/components/admin/system-settings"
 import { AppLayout } from "@/components/app-layout"
+import {
+  GetAdminDashboardService,
+  type AdminDashboardData,
+} from "@/services/api/admin/GetAdminDashboard"
 
 export default function AdminDashboard() {
-  // Mock admin data
-  const adminData = {
-    name: "Admin Sistema",
-    role: "Super Administrador",
-    lastLogin: "2024-01-24T08:00:00Z",
+  const [dashboard, setDashboard] = useState<AdminDashboardData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setIsLoading(true)
+        setLoadError(null)
+        const data = await GetAdminDashboardService.getDashboard()
+        setDashboard(data)
+      } catch (error) {
+        console.error("Falha ao carregar dashboard administrativo:", error)
+        setLoadError("Não foi possível carregar os dados do dashboard.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [])
+
+  const systemStats = dashboard?.systemStats ?? {
+    totalUsers: 0,
+    activeUsers: 0,
+    newUsersToday: 0,
+    pendingApprovals: 0,
+    totalDoctors: 0,
+    totalPatients: 0,
+    systemUptime: "--",
+    criticalAlerts: 0,
+    dataBackupStatus: "Pending" as const,
+    lastBackup: null,
   }
 
-  const systemStats = {
-    totalUsers: 1247,
-    activeUsers: 892,
-    newUsersToday: 23,
-    pendingApprovals: 8,
-    totalDoctors: 156,
-    totalPatients: 1091,
-    systemUptime: "99.9%",
-    criticalAlerts: 2,
-    dataBackupStatus: "Completed",
-    lastBackup: "2024-01-24T02:00:00Z",
+  const systemStatus = dashboard?.systemStatus ?? {
+    server: "Offline" as const,
+    database: "Instavel" as const,
+    lgpdCompliance: "Atencao" as const,
   }
 
-  const recentActivity = [
-    {
-      id: 1,
-      type: "user_registration",
-      message: "Novo médico cadastrado: Dr. Carlos Silva",
-      time: "2 horas atrás",
-      severity: "info",
-    },
-    {
-      id: 2,
-      type: "security_alert",
-      message: "Tentativa de login suspeita detectada",
-      time: "4 horas atrás",
-      severity: "warning",
-    },
-    {
-      id: 3,
-      type: "system_update",
-      message: "Backup automático concluído com sucesso",
-      time: "6 horas atrás",
-      severity: "success",
-    },
-    {
-      id: 4,
-      type: "compliance",
-      message: "Relatório LGPD gerado automaticamente",
-      time: "1 dia atrás",
-      severity: "info",
-    },
-  ]
+  const recentActivity = dashboard?.recentActivity ?? []
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -102,6 +99,25 @@ export default function AdminDashboard() {
     }
   }
 
+  const formatTimeAgo = (dateValue: string) => {
+    const diffMs = Date.now() - new Date(dateValue).getTime()
+    const minutes = Math.floor(diffMs / (1000 * 60))
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    if (minutes < 60) return `${Math.max(minutes, 1)} min atrás`
+    if (hours < 24) return `${hours} hora${hours > 1 ? "s" : ""} atrás`
+    return `${days} dia${days > 1 ? "s" : ""} atrás`
+  }
+
+  const statusBadgeClass = (status: "Online" | "Offline" | "Saudavel" | "Instavel" | "Ativa" | "Atencao") => {
+    if (status === "Online" || status === "Saudavel" || status === "Ativa") {
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+    }
+
+    return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+  }
+
   return (
     <AppLayout userRole="admin">
       <div className="container mx-auto px-4 py-8">
@@ -114,6 +130,7 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">
             Gerencie usuários, monitore o sistema e mantenha a conformidade da plataforma Vitalium.
           </p>
+          {loadError && <p className="text-sm text-red-600 mt-2">{loadError}</p>}
         </div>
 
         {/* System Overview Cards */}
@@ -124,7 +141,9 @@ export default function AdminDashboard() {
                 <Users className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium">Total de Usuários</span>
               </div>
-              <div className="text-3xl font-bold text-foreground">{systemStats.totalUsers.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {isLoading ? "..." : systemStats.totalUsers.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {systemStats.activeUsers} ativos • {systemStats.newUsersToday} novos hoje
               </p>
@@ -137,7 +156,9 @@ export default function AdminDashboard() {
                 <UserCheck className="w-5 h-5 text-blue-500" />
                 <span className="text-sm font-medium">Médicos</span>
               </div>
-              <div className="text-3xl font-bold text-foreground">{systemStats.totalDoctors}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {isLoading ? "..." : systemStats.totalDoctors}
+              </div>
               <p className="text-xs text-muted-foreground">{systemStats.pendingApprovals} aguardando aprovação</p>
             </CardContent>
           </Card>
@@ -148,7 +169,9 @@ export default function AdminDashboard() {
                 <Heart className="w-5 h-5 text-green-500" />
                 <span className="text-sm font-medium">Pacientes</span>
               </div>
-              <div className="text-3xl font-bold text-foreground">{systemStats.totalPatients.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {isLoading ? "..." : systemStats.totalPatients.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground">Cadastrados na plataforma</p>
             </CardContent>
           </Card>
@@ -159,7 +182,7 @@ export default function AdminDashboard() {
                 <Activity className="w-5 h-5 text-orange-500" />
                 <span className="text-sm font-medium">Uptime do Sistema</span>
               </div>
-              <div className="text-3xl font-bold text-foreground">{systemStats.systemUptime}</div>
+              <div className="text-3xl font-bold text-foreground">{isLoading ? "..." : systemStats.systemUptime}</div>
               <p className="text-xs text-muted-foreground">{systemStats.criticalAlerts} alertas críticos</p>
             </CardContent>
           </Card>
@@ -208,21 +231,27 @@ export default function AdminDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Servidor Principal</span>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Online</Badge>
+                  <Badge className={statusBadgeClass(systemStatus.server)}>{systemStatus.server}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Banco de Dados</span>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Saudável</Badge>
+                  <Badge className={statusBadgeClass(systemStatus.database)}>
+                    {systemStatus.database === "Saudavel" ? "Saudável" : "Instável"}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Último Backup</span>
                   <span className="text-sm font-medium">
-                    {new Date(systemStats.lastBackup).toLocaleDateString("pt-BR")}
+                    {systemStats.lastBackup
+                      ? new Date(systemStats.lastBackup).toLocaleDateString("pt-BR")
+                      : "N/A"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Conformidade LGPD</span>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Ativa</Badge>
+                  <Badge className={statusBadgeClass(systemStatus.lgpdCompliance)}>
+                    {systemStatus.lgpdCompliance === "Ativa" ? "Ativa" : "Atenção"}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -236,6 +265,9 @@ export default function AdminDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {!isLoading && recentActivity.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Sem atividade recente.</p>
+                )}
                 {recentActivity.map((activity) => (
                   <div key={activity.id} className="flex items-start space-x-3">
                     <div className={`flex-shrink-0 ${getSeverityColor(activity.severity)}`}>
@@ -243,7 +275,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      <p className="text-xs text-muted-foreground">{formatTimeAgo(activity.occurredAt)}</p>
                     </div>
                   </div>
                 ))}

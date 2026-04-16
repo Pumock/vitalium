@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,84 +19,54 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { User, MoreVertical, UserCheck, UserX, Shield, Edit, Trash2, Plus, Filter, Download, Mail } from "lucide-react"
 import { NewUserForm } from "./new-user-form-dialog"
+import { GetUsersService, type ListedUserModel } from "@/services/api/users/GetUsers"
+import { UpdateUserService } from "@/services/api/users/UpdateUser"
+import { DeleteUserService } from "@/services/api/users/DeleteUser"
 
+interface DashboardUser {
+  id: string
+  name: string
+  email: string
+  phone: string
+  role: "doctor" | "patient" | "nurse" | "secretary" | "admin" | "caregiver"
+  status: "active" | "inactive"
+  lastLogin: string | null
+  registrationDate: string
+  verified: boolean
+  specialty?: string
+  crm?: string
+  patientsCount?: number
+}
 
 export function UserManagement({ searchQuery }: any) {
   const [filterRole, setFilterRole] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
   const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [showUserDialog, setShowUserDialog] = useState(false)
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
+  const [users, setUsers] = useState<DashboardUser[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false)
 
-  // Mock users data
-  const users = [
-    {
-      id: "1",
-      name: "Dr. João Santos",
-      email: "joao.santos@email.com",
-      phone: "(11) 99999-1234",
-      role: "doctor",
-      specialty: "Cardiologia",
-      crm: "CRM 12345-SP",
-      status: "active",
-      lastLogin: "2024-01-24T08:00:00Z",
-      registrationDate: "2024-01-01T00:00:00Z",
-      patientsCount: 45,
-      verified: true,
-    },
-    {
-      id: "2",
-      name: "Maria Silva",
-      email: "maria.silva@email.com",
-      phone: "(11) 99999-5678",
-      role: "patient",
-      condition: "Hipertensão",
-      status: "active",
-      lastLogin: "2024-01-24T14:30:00Z",
-      registrationDate: "2024-01-15T00:00:00Z",
-      verified: true,
-    },
-    {
-      id: "3",
-      name: "Dr. Carlos Silva",
-      email: "carlos.silva@email.com",
-      phone: "(11) 99999-9999",
-      role: "doctor",
-      specialty: "Neurologia",
-      crm: "CRM 67890-SP",
-      status: "pending",
-      lastLogin: null,
-      registrationDate: "2024-01-24T10:00:00Z",
-      patientsCount: 0,
-      verified: false,
-    },
-    {
-      id: "4",
-      name: "Ana Costa",
-      email: "ana.costa@email.com",
-      phone: "(11) 99999-4321",
-      role: "patient",
-      condition: "Diabetes",
-      status: "active",
-      lastLogin: "2024-01-23T16:45:00Z",
-      registrationDate: "2024-01-10T00:00:00Z",
-      verified: true,
-    },
-    {
-      id: "5",
-      name: "Enfermeira Paula",
-      email: "paula.enfermeira@email.com",
-      phone: "(11) 99999-8765",
-      role: "nurse",
-      department: "UTI",
-      status: "active",
-      lastLogin: "2024-01-24T07:30:00Z",
-      registrationDate: "2024-01-05T00:00:00Z",
-      verified: true,
-    },
-  ]
+  const fetchUsers = useCallback(async () => {
+    try {
+      setIsLoadingUsers(true)
+      setLoadError(null)
+      const response = await GetUsersService.getUsers()
+      setUsers(response.map(mapToDashboardUser))
+    } catch (error) {
+      console.error("Falha ao carregar usuários:", error)
+      setLoadError("Não foi possível carregar os usuários.")
+    } finally {
+      setIsLoadingUsers(false)
+    }
+  }, [])
 
-  const filteredUsers = users.filter((user) => {
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
+
+  const filteredUsers = useMemo(() => users.filter((user) => {
     const query = searchQuery ? searchQuery.toLowerCase() : "";
 
     const matchesSearch =
@@ -107,7 +77,7 @@ export function UserManagement({ searchQuery }: any) {
     const matchesStatus = filterStatus === "all" || user.status === filterStatus;
 
     return matchesSearch && matchesRole && matchesStatus;
-  });
+  }), [users, searchQuery, filterRole, filterStatus])
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -145,19 +115,43 @@ export function UserManagement({ searchQuery }: any) {
     }
   }
 
-  const handleApproveUser = (userId: string) => {
-    console.log("Approving user:", userId)
-    // Here you would update the user status
+  const handleApproveUser = async (userId: string) => {
+    try {
+      setIsSubmittingAction(true)
+      await UpdateUserService.updateUser(userId, { isActive: true })
+      await fetchUsers()
+    } catch (error) {
+      console.error("Falha ao ativar usuário:", error)
+      setLoadError("Não foi possível ativar o usuário.")
+    } finally {
+      setIsSubmittingAction(false)
+    }
   }
 
-  const handleSuspendUser = (userId: string) => {
-    console.log("Suspending user:", userId)
-    // Here you would suspend the user
+  const handleSuspendUser = async (userId: string) => {
+    try {
+      setIsSubmittingAction(true)
+      await UpdateUserService.updateUser(userId, { isActive: false })
+      await fetchUsers()
+    } catch (error) {
+      console.error("Falha ao suspender usuário:", error)
+      setLoadError("Não foi possível suspender o usuário.")
+    } finally {
+      setIsSubmittingAction(false)
+    }
   }
 
-  const handleDeleteUser = (userId: string) => {
-    console.log("Deleting user:", userId)
-    // Here you would delete the user
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      setIsSubmittingAction(true)
+      await DeleteUserService.deleteUser(userId)
+      await fetchUsers()
+    } catch (error) {
+      console.error("Falha ao excluir usuário:", error)
+      setLoadError("Não foi possível excluir o usuário.")
+    } finally {
+      setIsSubmittingAction(false)
+    }
   }
 
   return (
@@ -182,12 +176,13 @@ export function UserManagement({ searchQuery }: any) {
                     Novo Usuário
                   </Button>
                 </DialogTrigger>
-                <NewUserForm onClose={() => setOpen(false)}/>
+                <NewUserForm onClose={() => setOpen(false)} onUserCreated={fetchUsers} />
               </Dialog>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {loadError && <p className="text-sm text-red-600 mb-3">{loadError}</p>}
           <div className="flex items-center space-x-4">
             <Select value={filterRole} onValueChange={setFilterRole}>
               <SelectTrigger className="w-48">
@@ -225,6 +220,14 @@ export function UserManagement({ searchQuery }: any) {
       </Card>
 
       {/* Users List */}
+      {isLoadingUsers && (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            Carregando usuários...
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4">
         {filteredUsers.map((user) => (
           <Card key={user.id} className="hover:shadow-lg transition-shadow">
@@ -254,7 +257,7 @@ export function UserManagement({ searchQuery }: any) {
 
                 <div className="flex items-center space-x-2">
                   {user.status === "pending" && (
-                    <Button size="sm" onClick={() => handleApproveUser(user.id)}>
+                    <Button size="sm" disabled={isSubmittingAction} onClick={() => handleApproveUser(user.id)}>
                       <UserCheck className="w-4 h-4 mr-2" />
                       Aprovar
                     </Button>
@@ -279,19 +282,27 @@ export function UserManagement({ searchQuery }: any) {
                         Enviar Email
                       </DropdownMenuItem>
                       {user.status === "active" ? (
-                        <DropdownMenuItem onClick={() => handleSuspendUser(user.id)} className="text-red-600">
+                        <DropdownMenuItem
+                          disabled={isSubmittingAction}
+                          onClick={() => handleSuspendUser(user.id)}
+                          className="text-red-600"
+                        >
                           <UserX className="w-4 h-4 mr-2" />
                           Suspender
                         </DropdownMenuItem>
                       ) : (
-                        <DropdownMenuItem onClick={() => handleApproveUser(user.id)}>
+                        <DropdownMenuItem disabled={isSubmittingAction} onClick={() => handleApproveUser(user.id)}>
                           <UserCheck className="w-4 h-4 mr-2" />
                           Ativar
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-red-600">
+                      <DropdownMenuItem
+                        disabled={isSubmittingAction}
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="text-red-600"
+                      >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
+                        Excluir (desativar)
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -319,9 +330,9 @@ export function UserManagement({ searchQuery }: any) {
                 <div className="mt-3 pt-3 border-t border-border">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {user.specialty} • {user.crm}
+                      {user.specialty ?? "Especialidade não informada"} • {user.crm ?? "CRM não informado"}
                     </span>
-                    <span className="font-medium">{user.patientsCount} pacientes</span>
+                    <span className="font-medium">{user.patientsCount ?? 0} pacientes</span>
                   </div>
                 </div>
               )}
@@ -330,7 +341,7 @@ export function UserManagement({ searchQuery }: any) {
         ))}
       </div>
 
-      {filteredUsers.length === 0 && (
+      {!isLoadingUsers && filteredUsers.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -341,4 +352,36 @@ export function UserManagement({ searchQuery }: any) {
       )}
     </div>
   )
+}
+
+function mapToDashboardUser(user: ListedUserModel): DashboardUser {
+  return {
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`.trim(),
+    email: user.email,
+    phone: user.phone ?? "-",
+    role: mapRole(user.role),
+    status: user.isActive ? "active" : "inactive",
+    lastLogin: null,
+    registrationDate: user.createdAt,
+    verified: user.isActive,
+  }
+}
+
+function mapRole(role: ListedUserModel["role"]): DashboardUser["role"] {
+  switch (role) {
+    case "DOCTOR":
+      return "doctor"
+    case "PATIENT":
+      return "patient"
+    case "NURSE":
+      return "nurse"
+    case "SECRETARY":
+      return "secretary"
+    case "ADMIN":
+      return "admin"
+    case "CAREGIVER":
+    default:
+      return "caregiver"
+  }
 }

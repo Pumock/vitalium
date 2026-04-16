@@ -1,20 +1,18 @@
 import { api } from '@/services/api/api';
 
 export interface CreateDoctorPayload {
-    userId: string; 
-    specialty: string; 
+    userId: string;
     crm: string;
-    consultationPrice: number;
-    bio: string;
+    crmState: boolean;
+    isActive: boolean;
 }
 
 export interface CreatedDoctorModel {
     id: string;
     userId: string;
-    specialty: string;
     crm: string;
-    consultationPrice: number;
-    bio: string;
+    crmState: boolean;
+    isActive: boolean;
     createdAt: string;
     updatedAt: string;
 }
