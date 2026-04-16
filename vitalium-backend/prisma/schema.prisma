@@ -625,3 +625,31 @@ model ErrorLog {
   @@index([resolved])
   @@map("error_logs")
 }
+
+// Security Event Logs
+model SecurityLog {
+  id        String        @id @default(cuid())
+  event     String
+  severity  SecurityLevel
+  userId    String?
+  metadata  Json?
+  timestamp DateTime      @default(now())
+
+  @@index([severity])
+  @@index([timestamp])
+  @@map("security_logs")
+}
+
+// Business Event Logs
+model BusinessEventLog {
+  id        String   @id @default(cuid())
+  event     String
+  entity    String
+  userId    String?
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([event])
+  @@index([timestamp])
+  @@map("business_event_logs")
+}
