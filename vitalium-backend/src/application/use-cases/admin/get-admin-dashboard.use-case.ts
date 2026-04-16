@@ -171,7 +171,9 @@ export class GetAdminDashboardUseCase {
         systemUptime: this.formatUptime(process.uptime()),
         criticalAlerts,
         dataBackupStatus:
-          latestBackup && latestBackup.timestamp >= oneDayAgo ? 'Completed' : 'Pending',
+          latestBackup && latestBackup.timestamp >= oneDayAgo
+            ? 'Completed'
+            : 'Pending',
         lastBackup: latestBackup?.timestamp ?? null,
       },
       systemStatus: {
@@ -208,8 +210,6 @@ export class GetAdminDashboardUseCase {
         return 'error';
       case SecurityLevel.HIGH:
         return 'warning';
-      case SecurityLevel.MEDIUM:
-      case SecurityLevel.LOW:
       default:
         return 'info';
     }
