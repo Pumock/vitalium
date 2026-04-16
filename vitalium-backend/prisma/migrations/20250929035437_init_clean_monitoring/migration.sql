@@ -146,7 +146,6 @@ CREATE TABLE "public"."admins" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "role" "public"."AdminRole" NOT NULL,
-    "permissions" JSONB,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

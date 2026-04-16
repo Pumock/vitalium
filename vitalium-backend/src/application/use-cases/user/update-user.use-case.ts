@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { IUserRepository } from '../../../domain/interfaces/repositories/user/user.repository.interface';
-import type { User } from '../../../infrastructure/database/models/user.models';
-import type { UpdateUserDTO } from '../../../presentation/dto/userDTO/update-user.dtp';
-import { DatabaseException } from '../../../shared/execeptions/system/database.exception';
+import { IUserRepository } from '../../../domain/interfaces/repositories/user/user.repository.interface';
+import { UpdateUserDTO } from '../../../presentation/dto/userDTO/update-user.dtp';
+import { UserNotFoundException } from '../../../shared/execeptions/user/user-not-found.exception';
+import { User } from '../../../infrastructure/database/models/user.models';
 
 @Injectable()
 export class UpdateUserUseCase {
@@ -12,10 +12,12 @@ export class UpdateUserUseCase {
   ) {}
 
   async execute(id: string, updateUserDTO: UpdateUserDTO): Promise<User> {
-    try {
-      return await this.userRepository.update(id, updateUserDTO);
-    } catch (error) {
-      throw new DatabaseException('atualizar usuário', error);
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new UserNotFoundException(`ID: ${id}`);
     }
+
+    const updatedUser = await this.userRepository.update(id, updateUserDTO);
+    return updatedUser;
   }
 }

@@ -129,17 +129,19 @@ enum UnitType {
 //////////////////////////////////////
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  phone     String?
-  avatar    String?
-  isActive  Boolean  @default(true)
-  role      UserRole
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String
+  firstName             String
+  lastName              String
+  phone                 String?
+  avatar                String?
+  isActive              Boolean   @default(true)
+  role                  UserRole
+  refreshToken          String?
+  refreshTokenExpiresAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   patient   Patient?
   caregiver Caregiver?
@@ -147,11 +149,8 @@ model User {
   nurse     Nurse?
   admin     Admin?
 
-  applicationLogs   ApplicationLog[]
   requestLogs       RequestLog[]
-  securityLogs      SecurityLog[]
   databaseLogs      DatabaseLog[]
-  businessEventLogs BusinessEventLog[]
   errorLogs         ErrorLog[]
 
   @@index([email])
@@ -299,7 +298,6 @@ model Admin {
   id          String    @id @default(cuid())
   userId      String    @unique
   role        AdminRole
-  permissions Json?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -553,31 +551,6 @@ model WardAdmission {
 // MONITORING & LOGGING TABLES
 // ================================
 
-// Application Logs
-model ApplicationLog {
-  id          String   @id @default(cuid())
-  level       LogLevel
-  message     String
-  context     String?
-  trace       String?
-  meta        Json?
-  timestamp   DateTime @default(now())
-  service     String   @default("vitalium-backend")
-  environment String   @default("development")
-  userId      String?
-  sessionId   String?
-  requestId   String?
-
-  // Foreign keys
-  user User? @relation(fields: [userId], references: [id])
-
-  @@index([level])
-  @@index([timestamp])
-  @@index([userId])
-  @@index([context])
-  @@map("application_logs")
-}
-
 // HTTP Request Logs
 model RequestLog {
   id           String   @id @default(cuid())
@@ -605,28 +578,6 @@ model RequestLog {
   @@map("request_logs")
 }
 
-// Security Audit Logs
-model SecurityLog {
-  id          String        @id @default(cuid())
-  event       String
-  severity    SecurityLevel
-  description String?
-  userId      String?
-  ip          String?
-  userAgent   String?
-  metadata    Json?
-  timestamp   DateTime      @default(now())
-
-  // Foreign keys
-  user User? @relation(fields: [userId], references: [id])
-
-  @@index([event])
-  @@index([severity])
-  @@index([timestamp])
-  @@index([userId])
-  @@map("security_logs")
-}
-
 // Database Operation Logs
 model DatabaseLog {
   id        String   @id @default(cuid())
@@ -649,45 +600,6 @@ model DatabaseLog {
   @@map("database_logs")
 }
 
-// Business Event Logs
-model BusinessEventLog {
-  id        String   @id @default(cuid())
-  event     String
-  entity    String
-  entityId  String
-  userId    String?
-  metadata  Json?
-  timestamp DateTime @default(now())
-
-  // Foreign keys
-  user User? @relation(fields: [userId], references: [id])
-
-  @@index([event])
-  @@index([entity])
-  @@index([entityId])
-  @@index([timestamp])
-  @@index([userId])
-  @@map("business_event_logs")
-}
-
-// API Usage Statistics
-model ApiUsageStatistic {
-  id          String   @id @default(cuid())
-  endpoint    String
-  method      String
-  count       Int      @default(1)
-  avgDuration Float?
-  minDuration Float?
-  maxDuration Float?
-  errorCount  Int      @default(0)
-  date        DateTime @db.Date
-  hour        Int? // 0-23 for hourly stats
-
-  @@unique([endpoint, method, date, hour])
-  @@index([endpoint])
-  @@index([date])
-  @@map("api_usage_statistics")
-}
 
 // Error Tracking
 model ErrorLog {

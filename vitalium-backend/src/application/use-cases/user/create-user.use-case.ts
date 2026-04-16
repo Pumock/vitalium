@@ -1,4 +1,5 @@
 import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import type { IUserRepository } from '../../../domain/interfaces/repositories/user/user.repository.interface';
 import type { CreateUserDTO } from '../../../presentation/dto/userDTO/create-user.dto';
 import {
@@ -103,7 +104,11 @@ export class CreateUserUseCase {
     }
 
     try {
-      const user = await this.userRepository.create(createUserDTO);
+      const hashedPassword = await bcrypt.hash(createUserDTO.password, 10);
+      const user = await this.userRepository.create({
+        ...createUserDTO,
+        password: hashedPassword,
+      });
       return user;
     } catch (error) {
       throw new DatabaseException('criar usuário', error);

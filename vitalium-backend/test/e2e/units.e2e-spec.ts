@@ -1,13 +1,26 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { AppModule } from '../../src/modules/app.module';
 import { PrismaProvider } from '../../src/infrastructure/database/prisma.provider';
 import { UnitType } from '../../src/shared/enums/unit.enum';
+import { Role } from '../../src/shared/enums/role.enum';
 
 describe('Units API (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaProvider;
+  let adminAccessToken: string;
+
+  const adminEmail = 'test-e2e-unit-admin@example.com';
+  const password = 'TestPassword123!';
+
+  async function loginAndGetToken(email: string): Promise<string> {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password });
+    return res.body.accessToken;
+  }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -34,28 +47,36 @@ describe('Units API (e2e)', () => {
   }, 30000);
 
   afterAll(async () => {
-    // Clean up test data
     await prisma.unit.deleteMany({
-      where: {
-        name: {
-          contains: 'test-e2e-unit',
-        },
-      },
+      where: { name: { contains: 'test-e2e-unit' } },
     });
-
+    await prisma.user.deleteMany({
+      where: { email: adminEmail },
+    });
     await prisma.$disconnect();
     await app.close();
   });
 
   beforeEach(async () => {
-    // Clean up test data before each test
     await prisma.unit.deleteMany({
-      where: {
-        name: {
-          contains: 'test-e2e-unit',
-        },
+      where: { name: { contains: 'test-e2e-unit' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: adminEmail },
+    });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'Tester',
+        isActive: true,
+        role: Role.ADMIN,
       },
     });
+    adminAccessToken = await loginAndGetToken(adminEmail);
   });
 
   describe('POST /units', () => {
@@ -75,6 +96,7 @@ describe('Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUnitDto)
         .expect(201);
 
@@ -112,6 +134,7 @@ describe('Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUnitDto)
         .expect(201);
 
@@ -134,6 +157,7 @@ describe('Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUnitDto)
         .expect(201);
 
@@ -156,6 +180,7 @@ describe('Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(invalidUnitDto)
         .expect(400);
     });
@@ -175,6 +200,7 @@ describe('Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(invalidUnitDto)
         .expect(400);
     });
@@ -193,6 +219,7 @@ describe('Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(invalidUnitDto)
         .expect(400);
     });
@@ -205,6 +232,7 @@ describe('Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(incompleteUnitDto)
         .expect(400);
     });
@@ -225,6 +253,7 @@ describe('Units API (e2e)', () => {
       // Create first unit
       await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUnitDto)
         .expect(201);
 
@@ -237,6 +266,7 @@ describe('Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(duplicateUnitDto)
         .expect(409);
     });
@@ -269,6 +299,7 @@ describe('Units API (e2e)', () => {
 
         const response = await request(app.getHttpServer())
           .post('/units')
+          .set('Authorization', `Bearer ${adminAccessToken}`)
           .send(createUnitDto)
           .expect(201);
 

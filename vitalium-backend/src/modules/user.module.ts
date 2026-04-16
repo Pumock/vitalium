@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CreateUserUseCase } from '../application/use-cases/user/create-user.use-case';
+import { SearchUserUseCase } from '../application/use-cases/user/search-user.use-case';
+import { UpdateUserUseCase } from '../application/use-cases/user/update-user.use-case';
 import { DeleteUserUseCase } from '../application/use-cases/user/delete-user.use-case';
 import { FindAllUsersUseCase } from '../application/use-cases/user/find-all-users.use-case';
 import { UpdateUserUseCase } from '../application/use-cases/user/update-user.use-case';
@@ -14,7 +16,7 @@ import { PrismaModule } from '../infrastructure/database/prisma.module';
     { provide: 'IUserRepository', useClass: UserDataRepository },
 
     CreateUserUseCase,
-    FindAllUsersUseCase,
+    SearchUserUseCase,
     UpdateUserUseCase,
     DeleteUserUseCase,
   ],

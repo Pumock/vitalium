@@ -23,19 +23,6 @@ export class SystemHealthService {
         userId: error.userId,
       });
 
-      // Also log as security event if it's critical
-      await this.metricsCollector.logSecurityEvent({
-        event: 'CRITICAL_APPLICATION_ERROR',
-        severity: 'CRITICAL',
-        description: `Critical error: ${error.message}`,
-        userId: error.userId,
-        metadata: {
-          type: error.type,
-          context: error.context,
-          stackTrace: error.stackTrace,
-        },
-      });
-
       console.error(`🚨 CRITICAL ERROR: ${error.type} - ${error.message}`);
     } catch (logError) {
       console.error('Failed to log critical error:', logError);
@@ -50,10 +37,9 @@ export class SystemHealthService {
     metadata?: any;
   }) {
     try {
-      await this.metricsCollector.logSecurityEvent({
-        event: 'APPLICATION_FAILURE',
-        severity: 'HIGH',
-        description: `Application failure in ${failure.operation}: ${failure.error}`,
+      await this.metricsCollector.logError({
+        errorType: 'APPLICATION_FAILURE',
+        errorMessage: `Application failure in ${failure.operation}: ${failure.error}`,
         userId: failure.userId,
         metadata: failure.metadata,
       });
@@ -80,13 +66,6 @@ export class SystemHealthService {
         metadata: error.metadata,
       });
 
-      await this.metricsCollector.logSecurityEvent({
-        event: 'DATABASE_CONNECTION_FAILURE',
-        severity: 'CRITICAL',
-        description: `Database failure: ${error.operation}`,
-        metadata: error.metadata,
-      });
-
       console.error(`🗄️ DATABASE FAILURE: ${error.operation} - ${error.error}`);
     } catch (logError) {
       console.error('Failed to log database failure:', logError);
@@ -102,14 +81,15 @@ export class SystemHealthService {
     metadata?: any;
   }) {
     try {
-      await this.metricsCollector.logSecurityEvent({
-        event: 'AUTHENTICATION_FAILURE',
-        severity: 'HIGH',
-        description: `Authentication failure: ${failure.type}`,
+      await this.metricsCollector.logError({
+        errorType: 'AUTHENTICATION_FAILURE',
+        errorMessage: `Authentication failure: ${failure.type}`,
         userId: failure.userId,
-        ip: failure.ip,
-        userAgent: failure.userAgent,
-        metadata: failure.metadata,
+        metadata: {
+          ip: failure.ip,
+          userAgent: failure.userAgent,
+          ...failure.metadata,
+        },
       });
 
       console.error(
@@ -148,20 +128,6 @@ export class SystemHealthService {
             ip: failure.ip,
           },
         });
-
-        if (failure.statusCode >= 500) {
-          await this.metricsCollector.logSecurityEvent({
-            event: 'API_SERVER_ERROR',
-            severity: 'HIGH',
-            description: `Server error: ${failure.method} ${failure.url}`,
-            userId: failure.userId,
-            ip: failure.ip,
-            metadata: {
-              statusCode: failure.statusCode,
-              error: failure.error,
-            },
-          });
-        }
 
         console.error(
           `🌐 API FAILURE: ${failure.method} ${failure.url} - ${failure.statusCode}`,
@@ -215,16 +181,6 @@ export class SystemHealthService {
         errorMessage: `Failed to start service: ${error.service} - ${error.error}`,
         stackTrace: error.stackTrace,
         context: 'STARTUP',
-      });
-
-      await this.metricsCollector.logSecurityEvent({
-        event: 'SERVICE_STARTUP_FAILURE',
-        severity: 'CRITICAL',
-        description: `Service startup failure: ${error.service}`,
-        metadata: {
-          service: error.service,
-          error: error.error,
-        },
       });
 
       console.error(`🚀 STARTUP FAILURE: ${error.service} - ${error.error}`);

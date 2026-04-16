@@ -1,14 +1,22 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 export const ApiDoctorUnitOperations = {
   createDoctorUnit: () =>
     applyDecorators(
       ApiTags('doctor-units'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Associar médico a uma unidade',
         description:
-          'Cria a associação entre um médico e uma unidade, definindo preço da consulta e status.',
+          'Cria a associação entre um médico e uma unidade, definindo preço da consulta e status. Requer role **ADMIN**.',
       }),
       ApiBody({
         description: 'Dados para associação do médico à unidade',
@@ -137,6 +145,142 @@ export const ApiDoctorUnitOperations = {
             errorCode: { type: 'string', example: 'UNIT_INVALID' },
           },
         },
+      }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN',
+      }),
+    ),
+
+  updateDoctorUnit: () =>
+    applyDecorators(
+      ApiTags('doctor-units'),
+      ApiBearerAuth('JWT-auth'),
+      ApiOperation({
+        summary: 'Editar associação médico-unidade',
+        description:
+          'Atualiza preço de consulta, status principal ou ativo de uma associação. Requer role **ADMIN**.',
+      }),
+      ApiParam({
+        name: 'id',
+        description: 'ID da associação médico-unidade',
+        example: 'cmjiobll4000a34pwwa6xkybe',
+        type: 'string',
+      }),
+      ApiBody({
+        description: 'Dados para atualização da associação',
+        schema: {
+          type: 'object',
+          properties: {
+            consultationPrice: {
+              type: 'number',
+              example: 200,
+              description: 'Novo preço da consulta',
+            },
+            isPrimary: {
+              type: 'boolean',
+              example: false,
+              description: 'Indica se esta é a unidade principal do médico',
+            },
+            isActive: {
+              type: 'boolean',
+              example: true,
+              description: 'Status do médico nesta unidade',
+            },
+          },
+        },
+      }),
+      ApiResponse({
+        status: 200,
+        description: 'Associação atualizada com sucesso',
+      }),
+      ApiResponse({
+        status: 400,
+        description: 'Dados inválidos',
+        schema: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number', example: 400 },
+            message: {
+              type: 'string',
+              example: 'Preço da consulta deve ser maior que zero',
+            },
+            errorCode: { type: 'string', example: 'VALIDATION_ERROR' },
+          },
+        },
+      }),
+      ApiResponse({
+        status: 404,
+        description: 'Associação não encontrada',
+        schema: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number', example: 404 },
+            message: {
+              type: 'string',
+              example:
+                'Nenhuma Unidade foi encontrado com os critérios: ID: abc123',
+            },
+            errorCode: { type: 'string', example: 'UNIT_NOT_FOUND' },
+          },
+        },
+      }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN',
+      }),
+    ),
+
+  deleteDoctorUnit: () =>
+    applyDecorators(
+      ApiTags('doctor-units'),
+      ApiBearerAuth('JWT-auth'),
+      ApiOperation({
+        summary: 'Desvincular médico de uma unidade',
+        description:
+          'Remove (soft delete) a associação entre um médico e uma unidade. Requer role **ADMIN**.',
+      }),
+      ApiParam({
+        name: 'id',
+        description: 'ID da associação médico-unidade',
+        example: 'cmjiobll4000a34pwwa6xkybe',
+        type: 'string',
+      }),
+      ApiResponse({
+        status: 204,
+        description: 'Médico desvinculado com sucesso',
+      }),
+      ApiResponse({
+        status: 404,
+        description: 'Associação não encontrada',
+        schema: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number', example: 404 },
+            message: {
+              type: 'string',
+              example:
+                'Nenhuma Unidade foi encontrado com os critérios: ID: abc123',
+            },
+            errorCode: { type: 'string', example: 'UNIT_NOT_FOUND' },
+          },
+        },
+      }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN',
       }),
     ),
 };

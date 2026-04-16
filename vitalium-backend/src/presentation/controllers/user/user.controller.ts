@@ -8,25 +8,28 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { CreateUserDTO } from '../../dto/userDTO/create-user.dto';
 import { UserResponseDTO } from '../../dto/userDTO/response/user-response.dto';
 import { ApiUserOperations } from '../../../shared/swagger/decorators';
 import { CreateUserUseCase } from '../../../application/use-cases/user/create-user.use-case';
-import { FindAllUsersUseCase } from '../../../application/use-cases/user/find-all-users.use-case';
+import { UpdateUserDTO } from '../../dto/userDTO/update-user.dtp';
+import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
+import { SearchUserUseCase } from '../../../application/use-cases/user/search-user.use-case';
 import { UpdateUserUseCase } from '../../../application/use-cases/user/update-user.use-case';
 import { DeleteUserUseCase } from '../../../application/use-cases/user/delete-user.use-case';
-import { UpdateUserDTO } from '../../dto/userDTO/update-user.dtp';
 
 @Controller('users')
+@UseGuards(AuthGuard, RolesGuard)
 export class UserController {
   constructor(
     private readonly createUserUseCase: CreateUserUseCase,
-    private readonly findAllUsersUseCase: FindAllUsersUseCase,
+    private readonly searchUserUseCase: SearchUserUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
-    // private readonly searchUserUseCase: SearchUserUseCase,
   ) {}
 
   @Post()
@@ -44,34 +47,34 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   @ApiUserOperations.findAllUsers()
   async findAll(): Promise<UserResponseDTO[]> {
-    const users = await this.findAllUsersUseCase.execute();
+    const users = await this.searchUserUseCase.findAll();
 
     return plainToInstance(UserResponseDTO, users, {
       excludeExtraneousValues: true,
     });
   }
 
-  //   @Get(':id')
-  //   @HttpCode(HttpStatus.OK)
-  //   @ApiUserOperations.findUserById()
-  //   async findOne(@Param('id') id: string): Promise<UserResponseDTO> {
-  //     const user = await this.searchUserUseCase.findById(id);
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiUserOperations.findUserById()
+  async findOne(@Param('id') id: string): Promise<UserResponseDTO> {
+    const user = await this.searchUserUseCase.findById(id);
 
-  //     return plainToInstance(UserResponseDTO, user, {
-  //       excludeExtraneousValues: true,
-  //     });
-  //   }
+    return plainToInstance(UserResponseDTO, user, {
+      excludeExtraneousValues: true,
+    });
+  }
 
-  //   @Get('email/:email')
-  //   @HttpCode(HttpStatus.OK)
-  //   @ApiUserOperations.findUserByEmail()
-  //   async findByEmail(@Param('email') email: string): Promise<UserResponseDTO> {
-  //     const user = await this.searchUserUseCase.findByEmail(email);
+  @Get('email/:email')
+  @HttpCode(HttpStatus.OK)
+  @ApiUserOperations.findUserByEmail()
+  async findByEmail(@Param('email') email: string): Promise<UserResponseDTO> {
+    const user = await this.searchUserUseCase.findByEmail(email);
 
-  //     return plainToInstance(UserResponseDTO, user, {
-  //       excludeExtraneousValues: true,
-  //     });
-  //   }
+    return plainToInstance(UserResponseDTO, user, {
+      excludeExtraneousValues: true,
+    });
+  }
 
   @Patch('/:id')
   @HttpCode(HttpStatus.OK)

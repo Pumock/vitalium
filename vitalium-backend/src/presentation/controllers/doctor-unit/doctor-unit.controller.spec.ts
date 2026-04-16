@@ -1,8 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DoctorUnitController } from './doctor-unit.controller';
 import { CreateDoctorUnitUseCase } from '../../../application/use-cases/doctor-unit/create-doctor-unit.use-case';
+import { UpdateDoctorUnitUseCase } from '../../../application/use-cases/doctor-unit/update-doctor-unit.use-case';
+import { DeleteDoctorUnitUseCase } from '../../../application/use-cases/doctor-unit/delete-doctor-unit.use-case';
 import { CreateDoctorUnitDTO } from '../../dto/doctor-unitDTO/create-doctor-unit.dto';
 import { ConflictException } from '../../../shared/execeptions/system/conflict.exception';
+import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
 
 describe('DoctorUnitController', () => {
   let controller: DoctorUnitController;
@@ -24,12 +28,23 @@ describe('DoctorUnitController', () => {
       providers: [
         {
           provide: CreateDoctorUnitUseCase,
-          useValue: {
-            execute: jest.fn(),
-          },
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: UpdateDoctorUnitUseCase,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: DeleteDoctorUnitUseCase,
+          useValue: { execute: jest.fn() },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<DoctorUnitController>(DoctorUnitController);
     createDoctorUnitUseCase = module.get(CreateDoctorUnitUseCase);
