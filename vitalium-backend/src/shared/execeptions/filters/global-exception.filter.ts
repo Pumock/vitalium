@@ -10,7 +10,7 @@ import {
 import { Request, Response } from 'express';
 import { BaseException } from '../base/base.exception';
 import { SystemHealthService } from '../../monitoring/system-health.service';
-import { MetricsCollectorService } from '../../monitoring/metrics-collector.service';
+import { LoggingPersistenceService } from '../../monitoring/logging-persistence.service';
 
 @Catch()
 @Injectable()
@@ -19,7 +19,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   constructor(
     private readonly systemHealth: SystemHealthService,
-    private readonly metricsCollector: MetricsCollectorService,
+    private readonly loggingPersistence: LoggingPersistenceService,
   ) {}
 
   async catch(exception: unknown, host: ArgumentsHost): Promise<void> {
@@ -95,8 +95,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   ): Promise<void> {
     try {
       const { status, message, errorCode, request } = errorData;
+      const requestId = (request as any).requestId as string | undefined;
+      const userId = (request as any).user?.sub as string | undefined;
 
-      // Determinar se é um erro crítico (5xx) ou aplicação
       const isCritical = status >= 500;
       const isAuthError = status === 401 || status === 403;
       const isDatabaseError =
@@ -105,7 +106,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           exception.message.includes('prisma') ||
           exception.message.includes('connection'));
 
-      // Log erro crítico
+      // Persistir ErrorLog para erros 5xx ou erros de autenticação
+      if (isCritical || isAuthError) {
+        this.loggingPersistence
+          .saveErrorLog({
+            errorType: errorCode,
+            errorMessage: message,
+            stackTrace:
+              exception instanceof Error ? exception.stack : undefined,
+            userId,
+            requestId,
+            context: `${request.method} ${request.url}`,
+            metadata: {
+              statusCode: status,
+              ip: request.ip,
+              userAgent: request.get('User-Agent'),
+            },
+          })
+          .catch(() => {});
+      }
+
       if (isCritical) {
         await this.systemHealth.logCriticalError({
           type: errorCode,
@@ -115,56 +135,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             url: request.url,
             method: request.method,
             ip: request.ip,
-            userAgent: request.get('User-Agent'),
             statusCode: status,
-            timestamp: new Date().toISOString(),
           }),
         });
       }
 
-      // Log falha de aplicação apenas para erros 5xx (não para 4xx comuns como 400, 404, 409)
-      // Erros 4xx são esperados e não precisam ir para o monitoring
-      // Log falha de banco de dados
       if (isDatabaseError) {
         await this.systemHealth.logDatabaseFailure({
           operation: `${request.method} ${request.url}`,
           error: message,
-          metadata: {
-            statusCode: status,
-            errorCode,
-            stackTrace:
-              exception instanceof Error ? exception.stack : undefined,
-          },
+          metadata: { statusCode: status, errorCode },
         });
       }
 
-      // Log falha de autenticação
       if (isAuthError) {
         await this.systemHealth.logAuthFailure({
           type: errorCode,
-          userId: 'unknown', // Poderia ser obtido do request se disponível
+          userId,
           ip: request.ip,
           userAgent: request.get('User-Agent'),
-          metadata: {
-            statusCode: status,
-            url: request.url,
-            method: request.method,
-          },
-        });
-      }
-
-      // Logar erros gerais apenas para 5xx
-      if (status >= 500) {
-        await this.metricsCollector.logError({
-          errorType: errorCode,
-          errorMessage: message,
-          stackTrace: exception instanceof Error ? exception.stack : undefined,
-          context: `${request.method} ${request.url}`,
-          userId: undefined,
         });
       }
     } catch (monitoringError) {
-      // Não falhar a requisição se o monitoramento falhar
       this.logger.error(
         'Erro ao registrar no sistema de monitoramento:',
         monitoringError,

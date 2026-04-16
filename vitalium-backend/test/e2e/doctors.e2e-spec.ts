@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { AppModule } from '../../src/modules/app.module';
 import { PrismaProvider } from '../../src/infrastructure/database/prisma.provider';
 import { Role } from '../../src/shared/enums/role.enum';
@@ -10,6 +11,17 @@ describe('Doctors API (e2e)', () => {
   let prisma: PrismaProvider;
   let createdUserId: string;
   let createdDoctorId: string;
+  let adminAccessToken: string;
+
+  const adminEmail = 'test-e2e-doctor-admin@example.com';
+  const password = 'TestPassword123!';
+
+  async function loginAndGetToken(email: string): Promise<string> {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password });
+    return res.body.accessToken;
+  }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -58,22 +70,25 @@ describe('Doctors API (e2e)', () => {
   });
 
   beforeEach(async () => {
-    // Clean up test data before each test
     await prisma.doctor.deleteMany({
-      where: {
-        crm: {
-          contains: 'test-e2e-doctor',
-        },
-      },
+      where: { crm: { contains: 'test-e2e-doctor' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'test-e2e-doctor' } },
     });
 
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test-e2e-doctor',
-        },
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'Tester',
+        isActive: true,
+        role: Role.ADMIN,
       },
     });
+    adminAccessToken = await loginAndGetToken(adminEmail);
   });
 
   describe('POST /doctors', () => {
@@ -101,6 +116,7 @@ describe('Doctors API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorDto)
         .expect(201);
 
@@ -139,6 +155,7 @@ describe('Doctors API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorDto)
         .expect(201);
 
@@ -167,6 +184,7 @@ describe('Doctors API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorDto)
         .expect(201);
 
@@ -181,6 +199,7 @@ describe('Doctors API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(incompleteDoctorDto)
         .expect(400);
     });
@@ -195,6 +214,7 @@ describe('Doctors API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorDto)
         .expect(404);
     });
@@ -221,6 +241,7 @@ describe('Doctors API (e2e)', () => {
       // Create first doctor
       await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorDto)
         .expect(201);
 
@@ -244,6 +265,7 @@ describe('Doctors API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(duplicateDoctorDto)
         .expect(409);
     });
@@ -270,6 +292,7 @@ describe('Doctors API (e2e)', () => {
       // Create first doctor
       await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorDto)
         .expect(201);
 
@@ -283,6 +306,7 @@ describe('Doctors API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctors')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(duplicateDoctorDto)
         .expect(409);
     });
@@ -319,6 +343,7 @@ describe('Doctors API (e2e)', () => {
     it('should return doctor by id', async () => {
       const response = await request(app.getHttpServer())
         .get(`/doctors/${createdDoctorId}`)
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -338,12 +363,14 @@ describe('Doctors API (e2e)', () => {
 
       await request(app.getHttpServer())
         .get(`/doctors/${nonExistentId}`)
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .expect(404);
     });
 
     it('should return doctor with user information', async () => {
       const response = await request(app.getHttpServer())
         .get(`/doctors/${createdDoctorId}`)
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .expect(200);
 
       expect(response.body.id).toBe(createdDoctorId);

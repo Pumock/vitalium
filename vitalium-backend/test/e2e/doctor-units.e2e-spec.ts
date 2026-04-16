@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { AppModule } from '../../src/modules/app.module';
 import { PrismaProvider } from '../../src/infrastructure/database/prisma.provider';
 import { Role } from '../../src/shared/enums/role.enum';
@@ -11,6 +12,17 @@ describe('Doctor-Units API (e2e)', () => {
   let prisma: PrismaProvider;
   let testDoctorId: string;
   let testUnitId: string;
+  let adminAccessToken: string;
+
+  const adminEmail = 'test-e2e-du-admin@example.com';
+  const password = 'TestPassword123!';
+
+  async function loginAndGetToken(email: string): Promise<string> {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password });
+    return res.body.accessToken;
+  }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -112,6 +124,20 @@ describe('Doctor-Units API (e2e)', () => {
       },
     });
 
+    // Create admin user for authentication
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'Tester',
+        isActive: true,
+        role: Role.ADMIN,
+      },
+    });
+    adminAccessToken = await loginAndGetToken(adminEmail);
+
     // Create test user, doctor and unit for tests
     const testUser = await prisma.user.create({
       data: {
@@ -169,6 +195,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(201);
 
@@ -193,6 +220,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(201);
 
@@ -217,6 +245,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(201);
 
@@ -232,6 +261,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(201);
 
@@ -292,6 +322,7 @@ describe('Doctor-Units API (e2e)', () => {
 
         const response = await request(app.getHttpServer())
           .post('/doctor-units')
+          .set('Authorization', `Bearer ${adminAccessToken}`)
           .send(createDoctorUnitDto)
           .expect(201);
 
@@ -307,6 +338,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(incompleteDoctorUnitDto)
         .expect(400);
     });
@@ -319,6 +351,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(400);
     });
@@ -331,6 +364,7 @@ describe('Doctor-Units API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(400);
     });
@@ -347,12 +381,14 @@ describe('Doctor-Units API (e2e)', () => {
       // Create first doctor-unit relationship
       await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto)
         .expect(201);
 
       // Try to create duplicate relationship (may return 409 or 500)
       const response = await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createDoctorUnitDto);
 
       expect([409, 500]).toContain(response.status);
@@ -383,6 +419,7 @@ describe('Doctor-Units API (e2e)', () => {
       // Create doctor-unit for first unit
       await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send({
           doctorId: testDoctorId,
           unitId: testUnitId,
@@ -394,6 +431,7 @@ describe('Doctor-Units API (e2e)', () => {
       // Create doctor-unit for second unit (same doctor, different unit)
       const response = await request(app.getHttpServer())
         .post('/doctor-units')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send({
           doctorId: testDoctorId,
           unitId: secondUnit.id,

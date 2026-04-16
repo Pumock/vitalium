@@ -1,4 +1,4 @@
-import type { Unit } from '../../../../infrastructure/repositories/database/models/unit.models';
+import type { Unit } from '../../../../infrastructure/database/models/unit.models';
 import type { CreateUnitDTO } from '../../../../presentation/dto/unitDTO/create-unit.dto';
 import type { UpdateUnitDTO } from '../../../../presentation/dto/unitDTO/update-unit.dto';
 

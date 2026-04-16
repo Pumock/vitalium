@@ -1,4 +1,4 @@
-import type { Admin } from '@prisma/client';
+import type { Admin } from './admin.models';
 import type { Role } from '../../../shared/enums';
 import type { Caregiver } from './caregiver.models';
 import type { Doctor } from './doctor.models';
@@ -15,6 +15,8 @@ export class User {
   avatar?: string;
   isActive: boolean;
   role: Role;
+  refreshToken?: string | null;
+  refreshTokenExpiresAt?: Date | null;
 
   createdAt: Date;
   updatedAt: Date;

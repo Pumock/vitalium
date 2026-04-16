@@ -6,17 +6,17 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 
 export const ApiUserOperations = {
   createUser: () =>
     applyDecorators(
       ApiTags('users'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Criar novo usuário',
         description:
-          'Cria um novo usuário no sistema com as informações fornecidas',
+          'Cria um novo usuário no sistema com as informações fornecidas. Requer autenticação.',
       }),
       ApiBody({
         description: 'Dados para criação do usuário',
@@ -112,6 +112,10 @@ export const ApiUserOperations = {
             error: { type: 'string', example: 'Conflict' },
           },
         },
+      }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
       }),
     ),
 
@@ -383,7 +387,7 @@ export const ApiUserOperations = {
         description: 'Retorna os dados de um usuário específico pelo seu email',
       }),
       ApiBearerAuth('JWT-auth'),
-      ApiQuery({
+      ApiParam({
         name: 'email',
         description: 'Email do usuário',
         example: 'joao@exemplo.com',

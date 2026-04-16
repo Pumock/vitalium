@@ -3,7 +3,7 @@ import { PrismaProvider } from '../database/prisma.provider';
 import { plainToInstance } from 'class-transformer';
 import type { IUnitRepository } from '../../../domain/interfaces/repositories/units/unit.repository.interface';
 import type { CreateUnitDTO } from '../../../presentation/dto/unitDTO/create-unit.dto';
-import { Unit } from '../database/models/unit.models';
+import { Unit } from '../../database/models/unit.models';
 import type { UpdateUnitDTO } from '../../../presentation/dto/unitDTO/update-unit.dto';
 
 @Injectable()

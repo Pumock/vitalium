@@ -1,4 +1,10 @@
-import { IsString, IsEmail, IsOptional, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsBoolean,
+  Matches,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -32,7 +38,7 @@ export class UpdateUnitDTO {
   @Matches(/^\d{8}$/, {
     message: 'CEP deve conter exatamente 8 números',
   })
-  zipCode: string;
+  zipCode?: string;
 
   @IsOptional()
   @Transform(({ value }) => value?.replace(/\D/g, ''))
@@ -56,5 +62,10 @@ export class UpdateUnitDTO {
   @Matches(/^\d{14}$/, {
     message: 'CNPJ deve conter exatamente 14 números',
   })
-  cnpj: string;
+  cnpj?: string;
+
+  @ApiProperty({ example: true, required: false })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

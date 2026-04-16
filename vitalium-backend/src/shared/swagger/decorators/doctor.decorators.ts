@@ -3,6 +3,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiBearerAuth,
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
@@ -11,10 +12,11 @@ export const ApiDoctorOperations = {
   createDoctor: () =>
     applyDecorators(
       ApiTags('doctors'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Criar novo médico',
         description:
-          'Cria um novo médico no sistema com as informações fornecidas. O usuário associado deve ter role DOCTOR.',
+          'Cria um novo médico no sistema com as informações fornecidas. O usuário associado deve ter role DOCTOR. Requer role **ADMIN**.',
       }),
       ApiBody({
         description: 'Dados para criação do médico',
@@ -161,15 +163,24 @@ export const ApiDoctorOperations = {
           },
         },
       }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN',
+      }),
     ),
 
   findAllDoctors: () =>
     applyDecorators(
       ApiTags('doctors'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Listar todos os médicos',
         description:
-          'Retorna uma lista de todos os médicos cadastrados no sistema',
+          'Retorna uma lista de todos os médicos cadastrados no sistema. Requer role **ADMIN** ou **NURSE**.',
       }),
       ApiResponse({
         status: 200,
@@ -218,15 +229,24 @@ export const ApiDoctorOperations = {
           },
         },
       }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN ou NURSE',
+      }),
     ),
 
   findDoctorById: () =>
     applyDecorators(
       ApiTags('doctors'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Buscar médico por ID',
         description:
-          'Retorna os dados do médico, usuário associado e unidades vinculadas',
+          'Retorna os dados do médico, usuário associado e unidades vinculadas. Requer role **ADMIN**, **DOCTOR** ou **NURSE**.',
       }),
       ApiParam({
         name: 'id',
@@ -408,14 +428,24 @@ export const ApiDoctorOperations = {
           },
         },
       }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN, DOCTOR ou NURSE',
+      }),
     ),
 
   updateDoctor: () =>
     applyDecorators(
       ApiTags('doctors'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Atualizar médico',
-        description: 'Atualiza os dados de um médico existente',
+        description:
+          'Atualiza os dados de um médico existente. Requer role **ADMIN** ou **DOCTOR**.',
       }),
       ApiParam({
         name: 'id',
@@ -526,14 +556,24 @@ export const ApiDoctorOperations = {
           },
         },
       }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN ou DOCTOR',
+      }),
     ),
 
   deleteDoctor: () =>
     applyDecorators(
       ApiTags('doctors'),
+      ApiBearerAuth('JWT-auth'),
       ApiOperation({
         summary: 'Excluir médico',
-        description: 'Remove um médico do sistema (soft delete)',
+        description:
+          'Remove um médico do sistema (soft delete). Requer role **ADMIN**.',
       }),
       ApiParam({
         name: 'id',
@@ -560,6 +600,14 @@ export const ApiDoctorOperations = {
             errorCode: { type: 'string', example: 'DOCTOR_NOT_FOUND' },
           },
         },
+      }),
+      ApiResponse({
+        status: 401,
+        description: 'Não autenticado — token JWT ausente ou inválido',
+      }),
+      ApiResponse({
+        status: 403,
+        description: 'Sem permissão — requer role ADMIN',
       }),
     ),
 };

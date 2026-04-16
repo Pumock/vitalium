@@ -8,11 +8,29 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
+type DbLogData = { operation: string; table: string; duration: number };
+
 @Injectable()
 export class PrismaProvider
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  private static readonly LOG_TABLES = new Set([
+    'request_logs',
+    'database_logs',
+    'error_logs',
+    'Unknown',
+  ]);
+
+  private static dbLogger: ((data: DbLogData) => void) | null = null;
+
+  static registerDbLogger(fn: (data: DbLogData) => void): void {
+    PrismaProvider.dbLogger = fn;
+  }
+
+  static unregisterDbLogger(): void {
+    PrismaProvider.dbLogger = null;
+  }
   private readonly logger = new Logger('Prisma');
 
   constructor() {
@@ -54,6 +72,10 @@ export class PrismaProvider
         this.logger.warn(`🐢 ${operation} ${model} | ${duration.toFixed(0)}ms`);
       } else {
         this.logger.log(`🔍 ${operation} ${model} | ${duration.toFixed(0)}ms`);
+      }
+
+      if (PrismaProvider.dbLogger && !PrismaProvider.LOG_TABLES.has(model)) {
+        PrismaProvider.dbLogger({ operation, table: model, duration });
       }
     });
 

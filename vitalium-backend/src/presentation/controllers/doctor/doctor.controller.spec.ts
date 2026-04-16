@@ -2,9 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DoctorController } from './doctor.controller';
 import { CreateDoctorUseCase } from '../../../application/use-cases/doctor/create-doctor.use-case';
 import { SearchDoctorUseCase } from '../../../application/use-cases/doctor/search-doctor.use-case';
+import { UpdateDoctorUseCase } from '../../../application/use-cases/doctor/update-doctor.use-case';
+import { DeleteDoctorUseCase } from '../../../application/use-cases/doctor/delete-doctor.use-case';
 import { CreateDoctorDTO } from '../../dto/doctorDTO/create-doctor.dto';
 import { DoctorNotFoundException } from '../../../shared/execeptions/doctor/doctor-not-found.exception';
 import { DoctorAlreadyExistsException } from '../../../shared/execeptions/doctor/doctor-already-exists.exception';
+import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
 
 describe('DoctorController', () => {
   let controller: DoctorController;
@@ -27,19 +31,27 @@ describe('DoctorController', () => {
       providers: [
         {
           provide: CreateDoctorUseCase,
-          useValue: {
-            execute: jest.fn(),
-          },
+          useValue: { execute: jest.fn() },
         },
         {
           provide: SearchDoctorUseCase,
-          useValue: {
-            findById: jest.fn(),
-            findAll: jest.fn(),
-          },
+          useValue: { findById: jest.fn(), findAll: jest.fn() },
+        },
+        {
+          provide: UpdateDoctorUseCase,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: DeleteDoctorUseCase,
+          useValue: { execute: jest.fn() },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<DoctorController>(DoctorController);
     createDoctorUseCase = module.get(CreateDoctorUseCase);

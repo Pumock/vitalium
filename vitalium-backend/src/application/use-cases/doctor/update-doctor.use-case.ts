@@ -36,10 +36,13 @@ export class UpdateDoctorUseCase {
         id,
         updateDoctorDTO,
       );
+      if (!updatedDoctor) {
+        throw new DoctorNotFoundException(`ID: ${id}`);
+      }
       return updatedDoctor;
     } catch (error) {
-      if (error.message?.includes('not·found')) {
-        throw new DoctorNotFoundException(`ID: ${id}`);
+      if (error instanceof DoctorNotFoundException) {
+        throw error;
       }
       throw new DatabaseException('atualizar médico', error);
     }

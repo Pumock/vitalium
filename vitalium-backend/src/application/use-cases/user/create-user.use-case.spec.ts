@@ -68,7 +68,16 @@ describe('CreateUserUseCase', () => {
       const result = await useCase.execute(validDTO);
 
       expect(userRepository.findByEmail).toHaveBeenCalledWith(validDTO.email);
-      expect(userRepository.create).toHaveBeenCalledWith(validDTO);
+      expect(userRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: validDTO.email,
+          firstName: validDTO.firstName,
+          lastName: validDTO.lastName,
+          phone: validDTO.phone,
+          role: validDTO.role,
+          isActive: validDTO.isActive,
+        }),
+      );
       expect(result).toEqual(mockUser);
     });
 

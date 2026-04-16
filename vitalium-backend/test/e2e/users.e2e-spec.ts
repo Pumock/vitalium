@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { AppModule } from '../../src/modules/app.module';
 import { PrismaProvider } from '../../src/infrastructure/database/prisma.provider';
 import { Role } from '../../src/shared/enums/role.enum';
@@ -8,6 +9,17 @@ import { Role } from '../../src/shared/enums/role.enum';
 describe('Users API (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaProvider;
+  let adminAccessToken: string;
+
+  const adminEmail = 'test-e2e-users-admin@example.com';
+  const password = 'TestPassword123!';
+
+  async function loginAndGetToken(email: string): Promise<string> {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password });
+    return res.body.accessToken;
+  }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -34,28 +46,36 @@ describe('Users API (e2e)', () => {
   }, 30000);
 
   afterAll(async () => {
-    // Clean up test data
     await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test-e2e-user',
-        },
-      },
+      where: { email: { contains: 'test-e2e-user' } },
     });
-
+    await prisma.user.deleteMany({
+      where: { email: adminEmail },
+    });
     await prisma.$disconnect();
     await app.close();
   });
 
   beforeEach(async () => {
-    // Clean up test data before each test
     await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test-e2e-user',
-        },
+      where: { email: { contains: 'test-e2e-user' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: adminEmail },
+    });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'Tester',
+        isActive: true,
+        role: Role.ADMIN,
       },
     });
+    adminAccessToken = await loginAndGetToken(adminEmail);
   });
 
   describe('POST /users', () => {
@@ -73,6 +93,7 @@ describe('Users API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUserDto)
         .expect(201);
 
@@ -104,6 +125,7 @@ describe('Users API (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUserDto)
         .expect(201);
 
@@ -132,6 +154,7 @@ describe('Users API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(invalidUserDto)
         .expect(400);
     });
@@ -149,6 +172,7 @@ describe('Users API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(invalidUserDto)
         .expect(400);
     });
@@ -161,6 +185,7 @@ describe('Users API (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(incompleteUserDto)
         .expect(400);
     });
@@ -178,12 +203,14 @@ describe('Users API (e2e)', () => {
       // Create first user
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUserDto)
         .expect(201);
 
       // Try to create user with same email
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createUserDto)
         .expect(409);
     });
@@ -209,6 +236,7 @@ describe('Users API (e2e)', () => {
 
         const response = await request(app.getHttpServer())
           .post('/users')
+          .set('Authorization', `Bearer ${adminAccessToken}`)
           .send(createUserDto)
           .expect(201);
 

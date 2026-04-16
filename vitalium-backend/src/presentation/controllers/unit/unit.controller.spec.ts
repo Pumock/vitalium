@@ -1,9 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnitController } from './unit.controller';
 import { CreateUnitUseCase } from '../../../application/use-cases/unit/create-unit.use-case';
+import { SearchUnitUseCase } from '../../../application/use-cases/unit/search-unit.use-case';
+import { UpdateUnitUseCase } from '../../../application/use-cases/unit/update-unit.use-case';
+import { DeleteUnitUseCase } from '../../../application/use-cases/unit/delete-unit.use-case';
 import { CreateUnitDTO } from '../../dto/unitDTO/create-unit.dto';
 import { UnitType } from '../../../shared/enums/unit.enum';
 import { UnitAlreadyExistsException } from '../../../shared/execeptions/units/unit-already-exists.exception';
+import { AuthGuard } from '../../../shared/guards/auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
 
 describe('UnitController', () => {
   let controller: UnitController;
@@ -31,12 +36,27 @@ describe('UnitController', () => {
       providers: [
         {
           provide: CreateUnitUseCase,
-          useValue: {
-            execute: jest.fn(),
-          },
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: SearchUnitUseCase,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: UpdateUnitUseCase,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: DeleteUnitUseCase,
+          useValue: { execute: jest.fn() },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<UnitController>(UnitController);
     createUnitUseCase = module.get(CreateUnitUseCase);
