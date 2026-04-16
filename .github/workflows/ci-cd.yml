@@ -60,7 +60,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: ./node_modules/.bin/prisma generate
 
       - name: Build application
         run: npm run build
@@ -116,8 +116,8 @@ jobs:
 
       - name: Setup test database
         run: |
-          npx prisma migrate deploy
-          npx prisma generate
+          ./node_modules/.bin/prisma migrate deploy
+          ./node_modules/.bin/prisma generate
 
       - name: Run unit tests
         run: npm run test
