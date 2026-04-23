@@ -26,4 +26,4 @@ import { UserDataRepository } from '../infrastructure/repositories/user/user-dat
     },
   ],
 })
-export class AdminModule {}
+export class AdminModule { }

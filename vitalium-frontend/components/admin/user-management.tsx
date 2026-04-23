@@ -22,6 +22,7 @@ import { NewUserForm } from "./new-user-form-dialog"
 import { GetUsersService, type ListedUserModel } from "@/services/api/users/GetUsers"
 import { UpdateUserService } from "@/services/api/users/UpdateUser"
 import { DeleteUserService } from "@/services/api/users/DeleteUser"
+import { useSession } from "@/services/auth/use-session"
 
 interface DashboardUser {
   id: string
@@ -47,8 +48,14 @@ export function UserManagement({ searchQuery }: any) {
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSubmittingAction, setIsSubmittingAction] = useState(false)
+  const { isReady, accessToken, user } = useSession()
 
   const fetchUsers = useCallback(async () => {
+    if (!accessToken || user?.role !== "ADMIN") {
+      setIsLoadingUsers(false)
+      return
+    }
+
     try {
       setIsLoadingUsers(true)
       setLoadError(null)
@@ -60,11 +67,15 @@ export function UserManagement({ searchQuery }: any) {
     } finally {
       setIsLoadingUsers(false)
     }
-  }, [])
+  }, [accessToken, user])
 
   useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
     fetchUsers()
-  }, [fetchUsers])
+  }, [fetchUsers, isReady])
 
   const filteredUsers = useMemo(() => users.filter((user) => {
     const query = searchQuery ? searchQuery.toLowerCase() : "";
