@@ -23,7 +23,9 @@ import { DeleteAdminUseCase } from '../../../application/use-cases/admin/delete-
 import { CreateAdminDTO } from '../../dto/adminDTO/create-admin.dto';
 import { UpdateAdminDTO } from '../../dto/adminDTO/update-admin.dto';
 import { AdminResponseDTO } from '../../dto/adminDTO/response/admin-response.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('admins')
 @Controller('admins')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)

@@ -23,7 +23,9 @@ import { AuthGuard } from '../../../shared/guards/auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { Role } from '../../../shared/enums';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('units')
 @Controller('units')
 @UseGuards(AuthGuard, RolesGuard)
 export class UnitController {

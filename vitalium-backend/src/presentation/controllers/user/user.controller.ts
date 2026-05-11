@@ -23,7 +23,9 @@ import { UpdateUserUseCase } from '../../../application/use-cases/user/update-us
 import { DeleteUserUseCase } from '../../../application/use-cases/user/delete-user.use-case';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { Role } from '../../../shared/enums';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 @UseGuards(AuthGuard, RolesGuard)
 export class UserController {

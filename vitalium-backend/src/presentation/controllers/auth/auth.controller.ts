@@ -16,6 +16,7 @@ import { LoginDTO } from '../../dto/authDTO/login.dto';
 import { RefreshTokenDTO } from '../../dto/authDTO/refresh-token.dto';
 import type { AuthResponseDTO } from '../../dto/authDTO/response/auth-response.dto';
 import type { RefreshTokenResponseDTO } from '../../dto/authDTO/response/refresh-token-response.dto';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../../shared/guards/auth.guard';
 import { ApiAuthOperations } from '../../../shared/swagger/decorators/auth.decorators';
 
@@ -29,6 +30,7 @@ interface RequestWithUser extends ExpressRequest {
   };
 }
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(

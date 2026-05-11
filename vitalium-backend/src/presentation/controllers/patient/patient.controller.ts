@@ -16,6 +16,7 @@ import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { Role } from '../../../shared/enums';
 import { ApiPatientOperations } from '../../../shared/swagger/decorators';
+import { ApiTags } from '@nestjs/swagger';
 import { PatientResponseDTO } from '../../dto/patientDTO/response/patient-response.dto';
 import { CreatePatientDTO } from '../../dto/patientDTO/create-patient.dto';
 import { UpdatePatientDTO } from '../../dto/patientDTO/update-patient.dto';
@@ -24,6 +25,7 @@ import { SearchPatientUseCase } from '../../../application/use-cases/patient/sea
 import { UpdatePatientUseCase } from '../../../application/use-cases/patient/update-patient.use-case';
 import { DeletePatientUseCase } from '../../../application/use-cases/patient/delete-patient.use-case';
 
+@ApiTags('patients')
 @Controller('patients')
 @UseGuards(AuthGuard, RolesGuard)
 export class PatientController {

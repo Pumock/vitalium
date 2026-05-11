@@ -11,7 +11,6 @@ import {
   Request,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../../shared/guards/auth.guard';
 import { CreateConversationDTO } from '../../dto/chatDTO/create-conversation.dto';
 import { SendMessageDTO } from '../../dto/chatDTO/send-message.dto';
@@ -25,12 +24,14 @@ import { ChatGateway } from '../../../shared/gateways/chat.gateway';
 import { ChatProducer } from '../../../shared/messaging/producers/chat.producer';
 import { ConversationStatus } from '../../../shared/enums/conversation-status.enum';
 import { MessageOrigin } from '../../../shared/enums/message-origin.enum';
+import { ApiChatOperations } from '../../../shared/swagger/decorators/chat.decorators';
+import { ApiTags } from '@nestjs/swagger';
 
 interface AuthenticatedRequest extends Request {
   user: { sub: string; role: string };
 }
 
-@ApiTags('Chat')
+@ApiTags('chat')
 @UseGuards(AuthGuard)
 @Controller('chat')
 export class ChatController {
@@ -47,7 +48,7 @@ export class ChatController {
 
   @Post('conversations')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Criar nova conversa entre médico e paciente' })
+  @ApiChatOperations.createConversation()
   async createConversation(
     @Body() dto: CreateConversationDTO,
   ): Promise<ConversationResponseDTO> {
@@ -59,9 +60,7 @@ export class ChatController {
 
   @Get('conversations/doctor/:doctorId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Listar conversas de um médico' })
-  @ApiParam({ name: 'doctorId', type: String })
-  @ApiQuery({ name: 'status', enum: ConversationStatus, required: false })
+  @ApiChatOperations.listByDoctor()
   async listByDoctor(
     @Param('doctorId') doctorId: string,
     @Query('status') status?: ConversationStatus,
@@ -77,9 +76,7 @@ export class ChatController {
 
   @Get('conversations/patient/:patientId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Listar conversas de um paciente' })
-  @ApiParam({ name: 'patientId', type: String })
-  @ApiQuery({ name: 'status', enum: ConversationStatus, required: false })
+  @ApiChatOperations.listByPatient()
   async listByPatient(
     @Param('patientId') patientId: string,
     @Query('status') status?: ConversationStatus,
@@ -95,7 +92,7 @@ export class ChatController {
 
   @Get('conversations/:id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Buscar conversa por ID' })
+  @ApiChatOperations.findConversation()
   async findConversation(
     @Param('id') id: string,
   ): Promise<ConversationResponseDTO> {
@@ -109,8 +106,7 @@ export class ChatController {
 
   @Post('conversations/:id/messages')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Enviar mensagem em uma conversa' })
-  @ApiParam({ name: 'id', description: 'ID da conversa' })
+  @ApiChatOperations.sendMessage()
   async sendMessage(
     @Param('id') conversationId: string,
     @Body() dto: SendMessageDTO,
@@ -147,10 +143,7 @@ export class ChatController {
 
   @Get('conversations/:id/messages')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Listar mensagens de uma conversa (paginado)' })
-  @ApiParam({ name: 'id', description: 'ID da conversa' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiChatOperations.getMessages()
   async getMessages(
     @Param('id') conversationId: string,
     @Query('page') page = 1,

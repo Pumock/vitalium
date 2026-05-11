@@ -23,7 +23,9 @@ import { Role } from '../../../shared/enums';
 import { UpdateDoctorDTO } from '../../dto/doctorDTO/update-doctor.dto';
 import { UpdateDoctorUseCase } from '../../../application/use-cases/doctor/update-doctor.use-case';
 import { DeleteDoctorUseCase } from '../../../application/use-cases/doctor/delete-doctor.use-case';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('doctors')
 @Controller('doctors')
 @UseGuards(AuthGuard, RolesGuard)
 export class DoctorController {

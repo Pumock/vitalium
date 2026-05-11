@@ -14,6 +14,8 @@ export class SwaggerConfig {
       .addTag('doctor-units', 'Vínculos entre médicos e unidades')
       .addTag('units', 'Operações relacionadas às unidades')
       .addTag('health', 'Status da aplicação')
+      .addTag('patients', 'Operações relacionadas aos pacientes')
+      .addTag('chat', 'Mensagens e conversas entre médico e paciente')
       .addBearerAuth(
         {
           type: 'http',
