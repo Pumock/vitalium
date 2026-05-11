@@ -8,3 +8,7 @@ export * from './appointment-type.enum';
 export * from './ward-type.enum';
 export * from './admission-status.enum';
 export * from './admin-role.enum';
+export * from './message-channel.enum';
+export * from './message-origin.enum';
+export * from './message-status.enum';
+export * from './conversation-status.enum';

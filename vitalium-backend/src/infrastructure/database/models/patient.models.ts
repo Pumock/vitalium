@@ -17,6 +17,7 @@ export class Patient {
   city?: string;
   state?: string;
   zipCode?: string;
+  whatsappPhone?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # ========================
@@ -12,7 +12,7 @@ services:
     container_name: vitalium-backend
     restart: unless-stopped
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://vitalium:${POSTGRES_PASSWORD}@postgres:5432/vitalium?schema=public
@@ -28,7 +28,7 @@ services:
     networks:
       - vitalium-network
     healthcheck:
-      test: ['CMD', 'node', 'healthcheck.js']
+      test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -46,7 +46,7 @@ services:
     container_name: vitalium-frontend
     restart: unless-stopped
     ports:
-      - '80:80'
+      - "80:80"
     networks:
       - vitalium-network
     depends_on:
@@ -64,13 +64,17 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-vitalium}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - vitalium-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-vitalium} -d ${POSTGRES_DB:-vitalium}']
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-vitalium} -d ${POSTGRES_DB:-vitalium}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -83,21 +87,45 @@ services:
     container_name: vitalium-redis
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
       - vitalium-network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
+
+  # ========================
+  # RabbitMQ
+  # ========================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: vitalium-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-vitalium}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  rabbitmq_data:
     driver: local
 
 networks:

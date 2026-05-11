@@ -1,0 +1,41 @@
+PASS src/application/use-cases/doctor-unit/update-doctor-unit.use-case.spec.ts (6.637 s)
+PASS src/presentation/controllers/doctor-unit/doctor-unit.controller.spec.ts (7.103 s)
+PASS src/presentation/controllers/auth/auth.controller.spec.ts
+PASS src/application/use-cases/admin/update-admin.use-case.spec.ts
+PASS src/presentation/controllers/admin/admin.controller.spec.ts (9.204 s)
+PASS src/application/use-cases/admin/search-admin.use-case.spec.ts
+PASS src/application/use-cases/patient/delete-patient.use-case.spec.ts (10.323 s)
+PASS src/application/use-cases/patient/update-patient.use-case.spec.ts (10.245 s)
+PASS src/application/use-cases/patient/search-patient.use-case.spec.ts (10.316 s)
+PASS src/application/use-cases/patient/create-patient.use-case.spec.ts (10.418 s)
+PASS src/application/use-cases/doctor/delete-doctor.use-case.spec.ts
+PASS src/application/use-cases/user/create-user.use-case.spec.ts
+PASS src/application/use-cases/doctor-unit/create-doctor-unit.use-case.spec.ts
+PASS src/application/use-cases/auth/logout.use-case.spec.ts
+PASS src/application/use-cases/unit/delete-unit.use-case.spec.ts
+PASS src/application/use-cases/admin/create-admin.use-case.spec.ts
+PASS src/application/use-cases/admin/delete-admin.use-case.spec.ts
+PASS src/application/use-cases/doctor/search-doctor.use-case.spec.ts
+PASS src/application/use-cases/user/search-user.use-case.spec.ts
+PASS src/application/use-cases/doctor/create-doctor.use-case.spec.ts
+PASS src/presentation/controllers/health.controller.spec.ts (5.389 s)
+PASS src/application/use-cases/user/update-user.use-case.spec.ts
+PASS src/application/use-cases/unit/create-unit.use-case.spec.ts
+PASS src/application/use-cases/unit/search-unit.use-case.spec.ts
+PASS src/application/use-cases/doctor-unit/delete-doctor-unit.use-case.spec.ts
+PASS src/application/use-cases/doctor/update-doctor.use-case.spec.ts
+PASS src/application/use-cases/unit/update-unit.use-case.spec.ts
+PASS src/application/use-cases/user/delete-user.use-case.spec.ts
+PASS src/application/use-cases/auth/refresh-token.use-case.spec.ts
+PASS src/application/use-cases/auth/login.use-case.spec.ts
+PASS src/presentation/controllers/doctor/doctor.controller.spec.ts (14.136 s)
+PASS src/presentation/controllers/unit/unit.controller.spec.ts (14.168 s)
+PASS src/presentation/controllers/patient/patient.controller.spec.ts (14.302 s)
+PASS src/presentation/controllers/user/user.controller.spec.ts (14.335 s)
+
+Test Suites: 34 passed, 34 total
+Tests:       218 passed, 218 total
+Snapshots:   0 total
+Time:        15.292 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

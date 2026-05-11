@@ -16,8 +16,11 @@ services:
       - LOG_LEVEL=debug
       - PORT=3000
       - ENABLE_METRICS=true
+      - RABBITMQ_URL=amqp://vitalium:vitalium123@rabbitmq:5672
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     volumes:
       - ./src:/app/src:cached
@@ -57,6 +60,29 @@ services:
       timeout: 5s
       retries: 5
 
+  # ========================
+  # RabbitMQ - Dev
+  # ========================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: vitalium-rabbitmq-dev
+    restart: unless-stopped
+    ports:
+      - '5672:5672'
+      - '15672:15672' # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=vitalium
+      - RABBITMQ_DEFAULT_PASS=vitalium123
+    volumes:
+      - rabbitmq_dev_data:/var/lib/rabbitmq
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Prisma Studio (Database Admin UI)
   prisma-studio:
     build:
@@ -79,6 +105,8 @@ services:
 
 volumes:
   postgres_dev_data:
+    driver: local
+  rabbitmq_dev_data:
     driver: local
   node_modules_cache:
     driver: local
