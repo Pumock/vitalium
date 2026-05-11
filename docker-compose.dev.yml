@@ -9,8 +9,8 @@ services:
       target: development
     container_name: vitalium-backend-dev
     ports:
-      - '3000:3000'
-      - '9229:9229'
+      - "3000:3000"
+      - "9229:9229"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://vitalium:vitalium123@postgres:5432/vitalium?schema=public
@@ -18,8 +18,11 @@ services:
       - LOG_LEVEL=debug
       - PORT=3000
       - ENABLE_METRICS=true
+      - RABBITMQ_URL=amqp://vitalium:vitalium123@rabbitmq:5672
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     volumes:
       - ./vitalium-backend/src:/app/src:cached
@@ -46,7 +49,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: vitalium-frontend-dev
     ports:
-      - '3001:3001'
+      - "3001:3001"
     environment:
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
       - NEXT_TELEMETRY_DISABLED=1
@@ -83,13 +86,13 @@ services:
       - POSTGRES_USER=vitalium
       - POSTGRES_PASSWORD=vitalium123
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     networks:
       - vitalium-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U vitalium -d vitalium']
+      test: ["CMD-SHELL", "pg_isready -U vitalium -d vitalium"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -104,7 +107,7 @@ services:
       target: development
     container_name: vitalium-prisma-studio
     ports:
-      - '5555:5555'
+      - "5555:5555"
     environment:
       - DATABASE_URL=postgresql://vitalium:vitalium123@postgres:5432/vitalium?schema=public
     depends_on:
@@ -116,12 +119,66 @@ services:
       - vitalium-network
     command: npx prisma studio --port 5555 --browser none
 
+  # ========================
+  # RabbitMQ
+  # ========================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: vitalium-rabbitmq-dev
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=vitalium
+      - RABBITMQ_DEFAULT_PASS=vitalium123
+    networks:
+      - vitalium-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================
+  # Vitalium WhatsApp Gateway - Dev
+  # ========================
+  vitalium-whatsapp:
+    build:
+      context: ./vitalium-whatsapp
+      dockerfile: Dockerfile.dev
+    container_name: vitalium-whatsapp-dev
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - RABBITMQ_URL=amqp://vitalium:vitalium123@rabbitmq:5672
+      - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN:-dev_token_placeholder}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID:-dev_phone_id}
+      - WHATSAPP_VERIFY_TOKEN=vitalium_webhook_verify_dev
+      - WHATSAPP_APP_SECRET=${WHATSAPP_APP_SECRET:-dev_secret_placeholder}
+      - WHATSAPP_API_VERSION=v20.0
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./vitalium-whatsapp/src:/app/src:cached
+      - ./vitalium-whatsapp/package.json:/app/package.json:ro
+      - ./vitalium-whatsapp/tsconfig.json:/app/tsconfig.json:ro
+      - ./vitalium-whatsapp/nest-cli.json:/app/nest-cli.json:ro
+      - whatsapp_node_modules:/app/node_modules
+    networks:
+      - vitalium-network
+
 volumes:
   postgres_dev_data:
     driver: local
   backend_node_modules:
     driver: local
   frontend_node_modules:
+    driver: local
+  whatsapp_node_modules:
     driver: local
 
 networks:

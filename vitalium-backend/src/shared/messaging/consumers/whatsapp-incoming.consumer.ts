@@ -50,25 +50,28 @@ export class WhatsappIncomingConsumer implements OnModuleInit {
 
     // Busca conversa existente ou tenta pelo conversationId no payload
     let conversationId = payload.conversationId;
+    let resolvedPatientId = payload.patientId;
 
     if (!conversationId) {
-      // Busca o médico principal vinculado ao paciente
-      const patient = await this.patientRepository.findFirstByPatientId(
-        payload.patientId,
-      );
+      // payload.patientId contém o número de telefone enviado pelo gateway WhatsApp
+      const phone = payload.patientId;
+      const patient = await this.patientRepository.findByWhatsappPhone(phone);
 
       if (!patient || !patient.patientDoctors?.length) {
         this.logger.warn(
-          `Nenhum médico vinculado ao paciente ${payload.patientId}`,
+          `Nenhum paciente com WhatsApp ${phone} ou sem médico vinculado`,
         );
         return;
       }
+
+      // Substitui o telefone pelo ID real do paciente no banco
+      resolvedPatientId = patient.id;
 
       const doctorId = patient.patientDoctors[0].doctorId;
 
       // Busca ou cria conversa
       const existing = await this.conversationRepository.findByPatientAndDoctor(
-        payload.patientId,
+        patient.id,
         doctorId,
       );
 
@@ -76,7 +79,7 @@ export class WhatsappIncomingConsumer implements OnModuleInit {
         conversationId = existing.id;
       } else {
         const newConversation = await this.createConversationUseCase.execute({
-          patientId: payload.patientId,
+          patientId: patient.id,
           doctorId: doctorId,
           channel: MessageChannel.WHATSAPP,
         });
@@ -95,9 +98,10 @@ export class WhatsappIncomingConsumer implements OnModuleInit {
     // Notifica médico em tempo real via WebSocket
     this.chatGateway.emitNewMessage(conversationId, message);
 
-    // Encaminha para IA processar
+    // Encaminha para IA processar (com patientId resolvido para o ID do banco)
     await this.chatProducer.publishToAI({
       ...payload,
+      patientId: resolvedPatientId,
       conversationId,
     });
   }

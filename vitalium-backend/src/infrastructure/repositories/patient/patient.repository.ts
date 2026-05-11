@@ -177,6 +177,38 @@ export class PatientRepository implements IPatientRepository {
     });
   }
 
+  async findByWhatsappPhone(phone: string): Promise<Patient | null> {
+    // Aceita número com ou sem '+' (ex: "5511999999999" ou "+5511999999999")
+    const normalized = phone.startsWith('+') ? phone : `+${phone}`;
+
+    const patient = await this.prisma.patient.findFirst({
+      where: {
+        OR: [{ whatsappPhone: phone }, { whatsappPhone: normalized }],
+        isActive: true,
+      },
+      include: {
+        user: true,
+        units: {
+          where: { isActive: true },
+          include: { unit: true },
+        },
+        patientDoctors: {
+          include: {
+            doctor: { include: { user: true } },
+          },
+          orderBy: { startDate: 'desc' },
+        },
+      },
+    });
+
+    if (!patient) return null;
+
+    return plainToInstance(Patient, {
+      ...patient,
+      units: patient.units.map((pu) => pu.unit),
+    });
+  }
+
   async update(
     id: string,
     updatePatientDTO: UpdatePatientDTO,

@@ -54,6 +54,7 @@ describe('CreatePatientUseCase', () => {
     findByUserId: jest.fn(),
     findAll: jest.fn(),
     findFirstByPatientId: jest.fn(),
+    findByWhatsappPhone: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   };
