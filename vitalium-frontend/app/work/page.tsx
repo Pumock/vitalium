@@ -1,16 +1,37 @@
-import { AppLayout } from "@/components/app-layout"
-import type React from "react"
+"use client"
 
-const currentUserRole = 'admin'
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "@/services/auth/use-session"
 
-export default function Work({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+function getRoleHomePath(role?: string | null) {
+  switch (role?.trim().toLowerCase()) {
+    case "admin":
+      return "/work/admin/dashboard"
+    case "doctor":
+      return "/work/doctor/dashboard"
+    case "patient":
+      return "/work/patient/dashboard"
+    default:
+      return "/login"
+  }
+}
+
+export default function WorkPage() {
+  const router = useRouter()
+  const { isReady, user } = useSession()
+
+  useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    router.replace(getRoleHomePath(user?.role))
+  }, [isReady, router, user?.role])
+
   return (
-    <AppLayout userRole={currentUserRole}>
-      {children}
-    </AppLayout>
+    <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
+      Redirecionando...
+    </div>
   )
 }

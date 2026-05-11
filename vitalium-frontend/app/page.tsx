@@ -31,9 +31,6 @@ export default function LandingPage() {
             <Button variant="outline" asChild>
               <Link href="/login">Entrar</Link>
             </Button>
-            <Button asChild>
-              <Link href="/register">Cadastrar</Link>
-            </Button>
           </div>
         </div>
       </header>
@@ -54,7 +51,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="text-lg px-8" asChild>
-              <Link href="/register">Começar Agora</Link>
+              <Link href="/login">Acessar Plataforma</Link>
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent">
               Ver Demonstração
@@ -275,7 +272,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="text-lg px-8" asChild>
-                <Link href="/register">Cadastrar Agora</Link>
+                <Link href="/login">Entrar na Plataforma</Link>
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent">
                 Falar com Especialista

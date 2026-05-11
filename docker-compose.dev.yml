@@ -51,6 +51,8 @@ services:
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
       - NEXT_TELEMETRY_DISABLED=1
     volumes:
+      - ./vitalium-frontend/package.json:/app/package.json:ro
+      - ./vitalium-frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
       - ./vitalium-frontend/app:/app/app:cached
       - ./vitalium-frontend/components:/app/components:cached
       - ./vitalium-frontend/hooks:/app/hooks:cached
@@ -62,6 +64,7 @@ services:
       - ./vitalium-frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./vitalium-frontend/postcss.config.mjs:/app/postcss.config.mjs:ro
       - ./vitalium-frontend/components.json:/app/components.json:ro
+      - ./vitalium-frontend/.next:/app/.next:cached
       - frontend_node_modules:/app/node_modules
     networks:
       - vitalium-network

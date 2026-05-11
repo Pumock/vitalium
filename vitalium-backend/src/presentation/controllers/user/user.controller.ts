@@ -21,6 +21,8 @@ import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { SearchUserUseCase } from '../../../application/use-cases/user/search-user.use-case';
 import { UpdateUserUseCase } from '../../../application/use-cases/user/update-user.use-case';
 import { DeleteUserUseCase } from '../../../application/use-cases/user/delete-user.use-case';
+import { Roles } from '../../../shared/decorators/roles.decorator';
+import { Role } from '../../../shared/enums';
 
 @Controller('users')
 @UseGuards(AuthGuard, RolesGuard)
@@ -33,6 +35,7 @@ export class UserController {
   ) {}
 
   @Post()
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiUserOperations.createUser()
   async create(@Body() createUserDTO: CreateUserDTO): Promise<UserResponseDTO> {
@@ -44,6 +47,7 @@ export class UserController {
   }
 
   @Get()
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiUserOperations.findAllUsers()
   async findAll(): Promise<UserResponseDTO[]> {
@@ -77,6 +81,7 @@ export class UserController {
   }
 
   @Patch('/:id')
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiUserOperations.updateUser()
   async update(
@@ -91,6 +96,7 @@ export class UserController {
   }
 
   @Delete('/:id')
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiUserOperations.deleteUser()
   async delete(@Param('id') id: string): Promise<void> {

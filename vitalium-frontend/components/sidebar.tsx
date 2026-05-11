@@ -38,9 +38,9 @@ const navigation = [
     roles: ["doctor"],
   },
   {
-    name: "Dashboard Admin",
+    name: "Dashboard",
     href: "/work/admin/dashboard",
-    icon: Shield,
+    icon: Stethoscope,
     roles: ["admin"],
   },
   {
@@ -60,12 +60,6 @@ const navigation = [
     href: "/work/patient/appointments",
     icon: Calendar,
     roles: ["patient"],
-  },
-  {
-    name: "Relatórios",
-    href: "/work/reports",
-    icon: BarChart3,
-    roles: ["admin"],
   },
   {
     name: "Usuários",

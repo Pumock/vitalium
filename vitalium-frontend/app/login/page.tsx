@@ -9,21 +9,59 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Heart, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import axios from "axios"
+import { LoginService } from "@/services/api/auth/Login"
+import { persistAuthSession } from "@/services/auth/session"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [userType, setUserType] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const router = useRouter();
+  const router = useRouter()
 
-  const handleClick = () => {
-    router.push("/work/admin/dashboard");
-  };
+  const handleLogin = async () => {
+    try {
+      setIsSubmitting(true)
+      setErrorMessage(null)
+
+      const response = await LoginService.login({
+        email,
+        password,
+      })
+
+      if (userType && response.user.role.toLowerCase() !== userType) {
+        setErrorMessage("O tipo de usuário selecionado não corresponde à conta informada.")
+        return
+      }
+
+      persistAuthSession(response)
+
+      switch (response.user.role) {
+        case "ADMIN":
+          router.push("/work/admin/users")
+          break
+        default:
+          router.push("/")
+          break
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setErrorMessage(error.response?.data?.message ?? "Não foi possível realizar o login.")
+      } else {
+        setErrorMessage("Não foi possível realizar o login.")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex items-center justify-center space-x-2 mb-8">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
             <Heart className="w-6 h-6 text-primary-foreground" />
@@ -34,7 +72,7 @@ export default function LoginPage() {
         <Card className="border-border">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Entrar na sua conta</CardTitle>
-            <CardDescription>Acesse sua conta para continuar cuidando da sua saúde</CardDescription>
+            <CardDescription>Acesse sua conta para continuar usando a plataforma</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -56,7 +94,14 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="seu@email.com" className="border-border" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                className="border-border"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
@@ -67,6 +112,8 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Digite sua senha"
                   className="border-border pr-10"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
                 <Button
                   type="button"
@@ -84,6 +131,8 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <input type="checkbox" id="remember" className="rounded border-border" />
@@ -96,15 +145,17 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button onClick={handleClick} className="w-full" size="lg">
-              Entrar
+            <Button
+              onClick={handleLogin}
+              className="w-full"
+              size="lg"
+              disabled={isSubmitting || !email || !password}
+            >
+              {isSubmitting ? "Entrando..." : "Entrar"}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
-              Não tem uma conta?{" "}
-              <Link href="/register" className="text-primary hover:underline">
-                Cadastre-se aqui
-              </Link>
+              O acesso é liberado pela administração da plataforma.
             </div>
           </CardContent>
         </Card>

@@ -29,6 +29,8 @@
     "infra:stop": "docker compose -f docker-compose.dev.yml --env-file .env.development stop postgres",
     "migrate": "npx prisma migrate dev",
     "migrate:prod": "npx prisma migrate deploy",
+    "seed": "ts-node --project tsconfig.json prisma/seed.ts",
+    "seed:reset": "npx prisma migrate reset --skip-generate",
     "staging": "docker compose --env-file .env.staging up -d"
   },
   "dependencies": {
