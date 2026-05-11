@@ -170,7 +170,9 @@ services:
       - whatsapp_node_modules:/app/node_modules
     networks:
       - vitalium-network
-    command: npm run start:dev
+    tty: true
+    stdin_open: true
+    command: sh -c "npm install && rm -rf dist && npm run start:dev"
 
 volumes:
   postgres_dev_data:
