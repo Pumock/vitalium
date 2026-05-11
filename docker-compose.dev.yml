@@ -170,6 +170,7 @@ services:
       - whatsapp_node_modules:/app/node_modules
     networks:
       - vitalium-network
+    command: npm run start:dev
 
 volumes:
   postgres_dev_data:
